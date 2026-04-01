@@ -384,42 +384,176 @@
     </div>
   </div>
 
-  <script>
-    // ==============================
-    // CONFIG
-    // ==============================
-
+ <script>
 const API_BASE_URL = "https://sixseven.maksimkrivenkow.workers.dev";
 
-    // Если API_BASE_URL пустой, включается демо-режим.
+const input = document.getElementById("playerTagInput");
+const button = document.getElementById("searchButton");
+const statusBox = document.getElementById("status");
+const errorBox = document.getElementById("errorBox");
+const results = document.getElementById("results");
 
-    const input = document.getElementById('playerTagInput');
-    const button = document.getElementById('searchButton');
-    const statusBox = document.getElementById('status');
-    const errorBox = document.getElementById('errorBox');
-    const results = document.getElementById('results');
+const demoPlayer = {
+  name: "MaxPower",
+  tag: "#2PP8LQ",
+  trophies: 42158,
+  highestTrophies: 43520,
+  expLevel: 186,
+  club: { name: "Star Hunters" },
+  role: "president",
+  "3vs3Victories": 6821,
+  soloVictories: 901,
+  duoVictories: 1244,
+  brawlers: [
+    { name: "Shelly", trophies: 850, highestTrophies: 902, rank: 27, power: 11 },
+    { name: "Spike", trophies: 912, highestTrophies: 955, rank: 29, power: 11 },
+    { name: "Crow", trophies: 874, highestTrophies: 900, rank: 28, power: 11 },
+    { name: "Leon", trophies: 860, highestTrophies: 889, rank: 27, power: 11 },
+    { name: "Colt", trophies: 799, highestTrophies: 833, rank: 26, power: 10 },
+    { name: "Jessie", trophies: 776, highestTrophies: 810, rank: 25, power: 10 },
+    { name: "Piper", trophies: 744, highestTrophies: 792, rank: 24, power: 10 },
+    { name: "Mortis", trophies: 720, highestTrophies: 770, rank: 24, power: 11 }
+  ]
+};
 
-    const demoPlayer = {
-      name: 'MaxPower',
-      tag: '#2PP8LQ',
-      trophies: 42158,
-      highestTrophies: 43520,
-      expLevel: 186,
-      club: { name: 'Star Hunters' },
-      role: 'president',
-      '3vs3Victories': 6821,
-      soloVictories: 901,
-      duoVictories: 1244,
-      brawlers: [
-        { name: 'Shelly', trophies: 850, highestTrophies: 902, rank: 27, power: 11 },
-        { name: 'Spike', trophies: 912, highestTrophies: 955, rank: 29, power: 11 },
-        { name: 'Crow', trophies: 874, highestTrophies: 900, rank: 28, power: 11 },
-        { name: 'Leon', trophies: 860, highestTrophies: 889, rank: 27, power: 11 },
-        { name: 'Colt', trophies: 799, highestTrophies: 833, rank: 26, power: 10 },
-        { name: 'Jessie', trophies: 776, highestTrophies: 810, rank: 25, power: 10 },
-        { name: 'Piper', trophies: 744, highestTrophies: 792, rank: 24, power: 10 },
-        { name: 'Mortis', trophies: 720, highestTrophies: 770, rank: 24, power: 11 }
-      ]
-    };
+function normalizeTag(raw) {
+  return raw.trim().toUpperCase().replace(/\s+/g, "").replace(/^([^#])/, "#$1");
+}
 
-    function no
+function setStatus(message) {
+  statusBox.textContent = message || "";
+}
+
+function showError(message) {
+  errorBox.textContent = message;
+  errorBox.classList.remove("hidden");
+}
+
+function hideError() {
+  errorBox.textContent = "";
+  errorBox.classList.add("hidden");
+}
+
+function formatNumber(value) {
+  return new Intl.NumberFormat("ru-RU").format(value || 0);
+}
+
+function roleLabel(role) {
+  const map = {
+    member: "Участник",
+    senior: "Старший",
+    vicePresident: "Вице-президент",
+    president: "Президент"
+  };
+  return map[role] || "—";
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function renderPlayer(player) {
+  document.getElementById("avatarBox").textContent = player.name?.[0]?.toUpperCase() || "★";
+  document.getElementById("playerName").textContent = player.name || "Без имени";
+  document.getElementById("playerTag").textContent = player.tag || "—";
+  document.getElementById("playerClub").textContent = `Клуб: ${player.club?.name || "Без клуба"}`;
+  document.getElementById("playerRole").textContent = `Роль: ${roleLabel(player.role)}`;
+  document.getElementById("playerExp").textContent = `XP: ${formatNumber(player.expLevel)}`;
+
+  document.getElementById("trophies").textContent = formatNumber(player.trophies);
+  document.getElementById("highestTrophies").textContent = formatNumber(player.highestTrophies);
+  document.getElementById("wins3v3").textContent = formatNumber(player["3vs3Victories"]);
+  document.getElementById("soloWins").textContent = formatNumber(player.soloVictories);
+  document.getElementById("duoWins").textContent = formatNumber(player.duoVictories);
+  document.getElementById("brawlerCount").textContent = formatNumber(player.brawlers?.length || 0);
+
+  const sortedBrawlers = [...(player.brawlers || [])]
+    .sort((a, b) => (b.trophies || 0) - (a.trophies || 0))
+    .slice(0, 12);
+
+  const maxTrophies = Math.max(...sortedBrawlers.map(b => b.highestTrophies || b.trophies || 1), 1);
+  const list = document.getElementById("brawlersList");
+  list.innerHTML = "";
+
+  sortedBrawlers.forEach((brawler) => {
+    const percent = Math.max(8, Math.round(((brawler.trophies || 0) / maxTrophies) * 100));
+
+    const card = document.createElement("div");
+    card.className = "brawler-card";
+    card.innerHTML = `
+      <div class="brawler-top">
+        <div class="brawler-name">${escapeHtml(brawler.name || "Unknown")}</div>
+        <div class="rank">RANK ${brawler.rank || "—"}</div>
+      </div>
+      <div class="small">Сила: ${formatNumber(brawler.power)} · Макс. трофеи: ${formatNumber(brawler.highestTrophies)}</div>
+      <div class="progress"><span style="width:${percent}%"></span></div>
+      <div class="small">Текущие трофеи: ${formatNumber(brawler.trophies)}</div>
+    `;
+    list.appendChild(card);
+  });
+
+  results.classList.remove("hidden");
+}
+
+async function fetchPlayer(playerTag) {
+  if (!API_BASE_URL) {
+    await new Promise(resolve => setTimeout(resolve, 350));
+    return { ...demoPlayer, tag: playerTag };
+  }
+
+  const response = await fetch(`${API_BASE_URL}/player/${encodeURIComponent(playerTag)}`);
+
+  if (!response.ok) {
+    let message = `Ошибка ${response.status}`;
+    try {
+      const data = await response.json();
+      if (data?.reason) message = data.reason;
+      if (data?.message) message = data.message;
+      if (data?.error) message = data.error;
+    } catch (_) {}
+    throw new Error(message);
+  }
+
+  return response.json();
+}
+
+async function handleSearch() {
+  hideError();
+
+  const rawTag = input.value;
+  const playerTag = normalizeTag(rawTag);
+
+  if (!rawTag.trim()) {
+    showError("Введи тег игрока. Например: #2PP8LQ");
+    return;
+  }
+
+  button.disabled = true;
+  setStatus("Загружаю данные игрока...");
+
+  try {
+    const player = await fetchPlayer(playerTag);
+    renderPlayer(player);
+    setStatus("Готово.");
+  } catch (error) {
+    console.error(error);
+    showError(`Не удалось загрузить данные: ${error.message}`);
+    setStatus("");
+  } finally {
+    button.disabled = false;
+  }
+}
+
+button.addEventListener("click", handleSearch);
+input.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") handleSearch();
+});
+
+renderPlayer(demoPlayer);
+setStatus("Сайт готов. Введи тег игрока и нажми кнопку.");
+</script>
