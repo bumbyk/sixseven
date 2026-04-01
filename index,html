@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Brawl Account Stats</title>
+  <style>
+    :root {
+      --bg: #101728;
+      --card: #17233b;
+      --card-2: #203252;
+      --text: #f4f7ff;
+      --muted: #9fb1d1;
+      --accent: #f8d33a;
+      --accent-2: #6ee7ff;
+      --danger: #ff6b6b;
+      --ok: #62e58c;
+      --shadow: 0 14px 30px rgba(0,0,0,.25);
+      --radius: 22px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Inter, Arial, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(110,231,255,.14), transparent 28%),
+        radial-gradient(circle at top right, rgba(248,211,58,.14), transparent 25%),
+        linear-gradient(180deg, #0c1322 0%, var(--bg) 100%);
+      min-height: 100vh;
+    }
+
+    .container {
+      width: min(1160px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 28px 0 48px;
+    }
+
+    .hero {
+      background: linear-gradient(135deg, rgba(248,211,58,.14), rgba(110,231,255,.09));
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 28px;
+      padding: 28px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.08);
+      color: var(--accent);
+      font-weight: 700;
+      font-size: 14px;
+      margin-bottom: 14px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(32px, 5vw, 56px);
+      line-height: .95;
+      letter-spacing: -.03em;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 18px;
+      line-height: 1.5;
+      margin: 14px 0 0;
+      max-width: 780px;
+    }
+
+    .search-bar {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    input {
+      width: 100%;
+      border: none;
+      outline: none;
+      border-radius: 18px;
+      background: rgba(255,255,255,.08);
+      color: var(--text);
+      padding: 18px 18px;
+      font-size: 18px;
+    }
+
+    input::placeholder { color: #8ea3c5; }
+
+    button {
+      border: none;
+      cursor: pointer;
+      border-radius: 18px;
+      padding: 0 22px;
+      font-size: 17px;
+      font-weight: 800;
+      color: #0f1420;
+      background: linear-gradient(135deg, var(--accent), #ffef9c);
+      transition: transform .15s ease, box-shadow .15s ease;
+      box-shadow: 0 10px 24px rgba(248,211,58,.28);
+    }
+
+    button:hover { transform: translateY(-1px); }
+    button:disabled { opacity: .7; cursor: wait; }
+
+    .hint {
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .status {
+      margin: 18px 0 0;
+      min-height: 24px;
+      color: var(--accent-2);
+      font-weight: 600;
+    }
+
+    .error {
+      color: var(--danger);
+      background: rgba(255,107,107,.12);
+      border: 1px solid rgba(255,107,107,.25);
+      border-radius: 16px;
+      padding: 14px 16px;
+      margin-top: 18px;
+    }
+
+    .grid {
+      margin-top: 24px;
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 18px;
+    }
+
+    .card {
+      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.025));
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .card-inner { padding: 20px; }
+
+    .span-4 { grid-column: span 4; }
+    .span-6 { grid-column: span 6; }
+    .span-8 { grid-column: span 8; }
+    .span-12 { grid-column: span 12; }
+
+    .profile {
+      display: flex;
+      gap: 18px;
+      align-items: center;
+    }
+
+    .avatar {
+      width: 84px;
+      height: 84px;
+      border-radius: 22px;
+      background: linear-gradient(135deg, #37517e, #203252);
+      display: grid;
+      place-items: center;
+      font-size: 36px;
+      font-weight: 900;
+      color: var(--accent);
+      border: 1px solid rgba(255,255,255,.08);
+      flex-shrink: 0;
+    }
+
+    .name { font-size: 28px; font-weight: 900; margin: 0; }
+    .tag { color: var(--muted); margin-top: 4px; font-weight: 600; }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .pill {
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.07);
+      color: var(--text);
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .section-title {
+      margin: 0 0 16px;
+      font-size: 21px;
+      font-weight: 900;
+      letter-spacing: -.02em;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .stat-box {
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.06);
+      border-radius: 18px;
+      padding: 14px;
+    }
+
+    .stat-label {
+      color: var(--muted);
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+
+    .stat-value {
+      font-size: 28px;
+      font-weight: 900;
+      margin-top: 6px;
+    }
+
+    .brawlers-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 12px;
+    }
+
+    .brawler-card {
+      background: rgba(255,255,255,.045);
+      border: 1px solid rgba(255,255,255,.06);
+      border-radius: 18px;
+      padding: 14px;
+    }
+
+    .brawler-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .brawler-name {
+      font-weight: 900;
+      font-size: 16px;
+    }
+
+    .rank {
+      color: var(--accent);
+      font-weight: 900;
+      font-size: 13px;
+    }
+
+    .progress {
+      width: 100%;
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.06);
+      overflow: hidden;
+      margin: 10px 0 8px;
+    }
+
+    .progress > span {
+      display: block;
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    }
+
+    .small {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .footer-note {
+      margin-top: 20px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.55;
+      background: rgba(255,255,255,.04);
+      padding: 14px 16px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,.07);
+    }
+
+    .hidden { display: none; }
+
+    @media (max-width: 900px) {
+      .span-4, .span-6, .span-8 { grid-column: span 12; }
+      .search-bar { grid-template-columns: 1fr; }
+      button { padding: 16px 22px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <section class="hero">
+      <div class="badge">★ Brawl Stars Account Stats</div>
+      <h1>Статистика аккаунта<br>по ID / тегу игрока</h1>
+      <p class="subtitle">
+        Вводишь тег игрока — сайт показывает трофеи, уровень, клуб, лучшие бравлеры и общую прокачку аккаунта.
+        Интерфейс подходит для GitHub Pages: это полностью статический фронтенд.
+      </p>
+
+      <div class="search-bar">
+        <input id="playerTagInput" type="text" placeholder="Например: #2PP или 2PP" maxlength="20" />
+        <button id="searchButton">Найти игрока</button>
+      </div>
+      <div class="hint">Важно: для реальных данных нужен свой backend/proxy, потому что официальный Brawl Stars API нельзя безопасно вызывать прямо из GitHub Pages.</div>
+      <div id="status" class="status"></div>
+      <div id="errorBox" class="error hidden"></div>
+    </section>
+
+    <section id="results" class="grid hidden">
+      <article class="card span-8">
+        <div class="card-inner">
+          <div class="profile">
+            <div class="avatar" id="avatarBox">★</div>
+            <div>
+              <h2 class="name" id="playerName">—</h2>
+              <div class="tag" id="playerTag">—</div>
+              <div class="meta">
+                <div class="pill" id="playerClub">Клуб: —</div>
+                <div class="pill" id="playerRole">Роль: —</div>
+                <div class="pill" id="playerExp">XP: —</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article class="card span-4">
+        <div class="card-inner">
+          <h3 class="section-title">Коротко</h3>
+          <div class="stats-grid">
+            <div class="stat-box">
+              <div class="stat-label">Трофеи</div>
+              <div class="stat-value" id="trophies">0</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Макс. трофеи</div>
+              <div class="stat-value" id="highestTrophies">0</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Побед 3v3</div>
+              <div class="stat-value" id="wins3v3">0</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Solo wins</div>
+              <div class="stat-value" id="soloWins">0</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Duo wins</div>
+              <div class="stat-value" id="duoWins">0</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Бравлеров</div>
+              <div class="stat-value" id="brawlerCount">0</div>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article class="card span-12">
+        <div class="card-inner">
+          <h3 class="section-title">Топ бравлеры аккаунта</h3>
+          <div id="brawlersList" class="brawlers-list"></div>
+        </div>
+      </article>
+    </section>
+
+    <div class="footer-note">
+      Как подключить реальные данные: подними маленький proxy на Cloudflare Workers / Vercel / Netlify Functions,
+      добавь туда свой Brawl Stars API token и уже фронтендом стучись в свой endpoint.
+      Для GitHub Pages токен в браузере хранить нельзя.
+    </div>
+  </div>
+
+  <script>
+    // ==============================
+    // CONFIG
+    // ==============================
+
+    const API_BASE_URL = "https://sixseven.maksimkrivenkow.workers.dev/";
+
+    // Если API_BASE_URL пустой, включается демо-режим.
+
+    const input = document.getElementById('playerTagInput');
+    const button = document.getElementById('searchButton');
+    const statusBox = document.getElementById('status');
+    const errorBox = document.getElementById('errorBox');
+    const results = document.getElementById('results');
+
+    const demoPlayer = {
+      name: 'MaxPower',
+      tag: '#2PP8LQ',
+      trophies: 42158,
+      highestTrophies: 43520,
+      expLevel: 186,
+      club: { name: 'Star Hunters' },
+      role: 'president',
+      '3vs3Victories': 6821,
+      soloVictories: 901,
+      duoVictories: 1244,
+      brawlers: [
+        { name: 'Shelly', trophies: 850, highestTrophies: 902, rank: 27, power: 11 },
+        { name: 'Spike', trophies: 912, highestTrophies: 955, rank: 29, power: 11 },
+        { name: 'Crow', trophies: 874, highestTrophies: 900, rank: 28, power: 11 },
+        { name: 'Leon', trophies: 860, highestTrophies: 889, rank: 27, power: 11 },
+        { name: 'Colt', trophies: 799, highestTrophies: 833, rank: 26, power: 10 },
+        { name: 'Jessie', trophies: 776, highestTrophies: 810, rank: 25, power: 10 },
+        { name: 'Piper', trophies: 744, highestTrophies: 792, rank: 24, power: 10 },
+        { name: 'Mortis', trophies: 720, highestTrophies: 770, rank: 24, power: 11 }
+      ]
+    };
+
+    function no
